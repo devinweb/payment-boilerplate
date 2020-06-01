@@ -12,11 +12,35 @@
         button.loading span {
             color: transparent;
         }
+
+        .check-svg-position {
+            top: -12px;
+            right: -12px;
+        }
     </style>
 </head>
 
 <body>
     <div id="app" class="min-h-screen flex-col w-sreen container mx-auto flex items-center justify-center">
+        <div class="w-full max-w-lg flex justify-between mb-10">
+            <div class="cursor-pointer hover:bg-gray-100 w-48 p-5 border border-solid border-gray-200 rounded flex items-center justify-center relative" :class="{'border-green-500': gateway=='payfort'}" @click="setPaymentGateway('payfort')">
+                <div class="absolute check-svg-position bg-white rounded-full" v-if="gateway=='payfort'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="fill-current text-green-500" height="24" width="24">
+                        <path d="M0 0h24v24H0V0z" fill="none" />
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.29 16.29L5.7 12.7a.996.996 0 111.41-1.41L10 14.17l6.88-6.88a.996.996 0 111.41 1.41l-7.59 7.59a.996.996 0 01-1.41 0z" /></svg>
+                </div>
+                <img class="inline-block text-white shadow-solid" src="https://www.payfort.com/wp-content/uploads/brand_guidelines/logo/payfort.png" alt="" />
+            </div>
+            <div class="cursor-pointer hover:bg-gray-100 w-48 p-5 border border-solid border-gray-200 rounded flex items-center justify-center relative" :class="{'border-green-500': gateway=='hyperPay'}" @click="setPaymentGateway('hyperPay')">
+                <div class="absolute check-svg-position bg-white rounded-full" v-if="gateway=='hyperPay'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="fill-current text-green-500" height="24" width="24">
+                        <path d="M0 0h24v24H0V0z" fill="none" />
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.29 16.29L5.7 12.7a.996.996 0 111.41-1.41L10 14.17l6.88-6.88a.996.996 0 111.41 1.41l-7.59 7.59a.996.996 0 01-1.41 0z" /></svg>
+                </div>
+                <img class="inline-block w-24 text-white shadow-solid" src="https://www.hyperpay.com/wp-content/uploads/2020/04/cropped-011-300x155.png" alt="" />
+            </div>
+
+        </div>
         <div class="max-w-lg w-full flex items-center mb-8">
             <ul class="w-full flex-1 max-w-lg border border-gray-200 rounded-md">
                 <li class="pl-3 pr-4 py-3 flex items-center justify-between text-sm leading-5">
@@ -120,6 +144,7 @@
             amount: 480,
             errors: {},
             loading: false,
+            gateway: 'payfort',
         },
         computed: {
             expiration_date_after() {
@@ -130,13 +155,56 @@
             },
             expiration_month() {
                 return this.expiration_date_after.substring(0, 2);
-            },
+            }
+
         },
         methods: {
+            setPaymentGateway(gateway) {
+                this.gateway = gateway
+            },
+            handlePayfortResponse(data) {
+                const paymentWrapper = document.createElement(
+                    "div"
+                );
+                paymentWrapper.innerHTML = data.form;
+                document.body.append(paymentWrapper);
+                const payfortForm = document.getElementById(
+                    "payfort_payment_form"
+                );
+                const params = {
+                    card_holder_name: this.hold_name,
+                    card_number: this.card_number,
+                    expiry_date: `${this.expiration_year}${this.expiration_month}`,
+                    card_security_code: this.cvc,
+                };
+                console.log('im here', params);
 
+                for (const param in params) {
+                    /* eslint-disable no-prototype-builtins */
+                    if (params.hasOwnProperty(param)) {
+                        const value = params[param];
+                        const input = document.createElement(
+                            "input"
+                        );
+                        input.type = "hidden";
+                        input.id = param;
+                        input.name = param;
+                        input.value = value;
+                        payfortForm.appendChild(input);
+                    }
+                }
+
+                payfortForm.submit.click();
+            },
+            handleHyperPayResponse(data) {
+                console.log('data', data)
+                if (data.redirect) {
+                    window.location.href = data.redirect
+                }
+            },
             submitForm() {
                 this.loading = true;
-                let endpoint = "/submit-payment"
+                let endpoint = `/${this.gateway}/submit-payment`
 
                 let {
                     card_number,
@@ -147,7 +215,8 @@
                     amount,
                     hold_name,
                 } = this;
-                axios
+                expiration_year = (this.gateway == 'payfort') ? expiration_year : `20${expiration_year}`,
+                    axios
                     .post(endpoint, {
                         card_number,
                         expiration_year,
@@ -160,40 +229,16 @@
                     .then(({
                         data
                     }) => {
-                        const paymentWrapper = document.createElement(
-                            "div"
-                        );
-                        paymentWrapper.innerHTML = data.form;
-                        document.body.append(paymentWrapper);
-                        const payfortForm = document.getElementById(
-                            "payfort_payment_form"
-                        );
-
-                        const params = {
-                            card_holder_name: this.hold_name,
-                            card_number,
-                            expiry_date: `${this.expiration_year}${this.expiration_month}`,
-                            card_security_code: cvc,
-                        };
-
-                        for (const param in params) {
-                            /* eslint-disable no-prototype-builtins */
-                            if (params.hasOwnProperty(param)) {
-                                const value = params[param];
-                                const input = document.createElement(
-                                    "input"
-                                );
-                                input.type = "hidden";
-                                input.id = param;
-                                input.name = param;
-                                input.value = value;
-                                payfortForm.appendChild(input);
-                            }
+                        if (this.gateway == 'payfort') {
+                            console.log('im here');
+                            this.handlePayfortResponse(data);
+                        } else if (this.gateway == 'hyperPay') {
+                            this.handleHyperPayResponse(data);
                         }
 
-                        payfortForm.submit.click();
                     })
                     .catch((error) => {
+                        // console.log('error', error.response)
                         this.loading = false;
                         if (error.response.status == 422) {
                             this.errors = error.response.data.errors;

@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Devinweb\Payment\Facades\Payment;
+use Illuminate\Support\Facades\View;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -25,18 +27,21 @@ Route::get('/', function () {
  * ------------------
  */
 
-
-Route::post('/submit-payment', function (Request $request) {
-
-    $merchant_reference = Payment::use('payfort')->generateMerchantReference();
-
-    return Payment::use('payfort', $merchant_reference)->pay();
+Route::get('/{provider}/callback-success', function ($provider) {
+    if ($provider == 'hyperpay') {
+        return view('hyperpay.success');
+    }
+    return view('payfort.success');
 });
 
-Route::get('/callback-success', function (Request $request) {
-    return view('success');
-})->name('success');
+Route::get('/{provider}/callback-error', function ($provider) {
+    if ($provider == 'hyperpay') {
+        return view('hyperpay.error');
+    }
+    return view('payfort.error');
+});
 
-Route::get('/callback-error', function (Request $request) {
-    return view('error');
-})->name('error');
+Route::post('/{provider}/submit-payment', function ($provider) {
+    $merchant_reference =  rand(0, getrandmax());
+    return Payment::use($provider, $merchant_reference)->pay();
+});

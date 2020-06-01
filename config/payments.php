@@ -1,13 +1,13 @@
 <?php
 
 /*
- * You can place your custom package configuration in here.
- */
+         * You can place your custom package configuration in here.
+                                     */
 return [
 
 
     /**
-     * the route used to post payment data
+                 * the route used to post payment data
      */
     'routes' => [
 
@@ -19,8 +19,8 @@ return [
     'payfort' => [
 
         'callback_urls' => [
-            'error-page' => '/callback-error',
-            'success-page' => '/callback-success',
+            'error-page' => '/payfort/callback-error',
+            'success-page' => '/payfort/callback-success',
         ],
         'sandboxMode' => env('PAYFORT_SAND_BOX_MODE', true),
 
@@ -85,5 +85,14 @@ return [
         'command' => 'PURCHASE',
         'currency' => 'SAR',
 
+    ],
+    "hyperPay" => [
+        "entityId" => env('HYPER_PAY_ENTITY_ID'),
+        "currency" => env('HYPER_PAY_CURRENCY'),
+        "token" => env('HYPER_PAY_TOKEN'),
+        'callback_urls' => [
+            'error' => '/hyperpay/callback-error',
+            'success' => '/hyperpay/callback-success',
+        ],
     ]
 ];
